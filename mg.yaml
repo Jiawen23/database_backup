@@ -1,0 +1,71 @@
+# apiVersion: mongodb.com/v1
+# kind: MongoDB
+# metadata:
+#   name: mongodb-jw
+# spec:
+#   version: 4.2.2-ent
+#   opsManager:
+#     configMapRef:
+#       name: <configMap.metadata.name>
+#             # Must match metadata.name in ConfigMap file
+#   credentials: <mycredentials>
+#   type: Standalone
+#   persistent: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: mongodb
+data:
+  MONGO_INITDB_ROOT_USERNAME: zjw
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: mongodb
+data:
+  MONGO_INITDB_ROOT_PASSWORD: aWxvdmVqdw==
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mg-service
+  namespace: mongodb
+spec:
+  selector:
+    app: mongodb
+  ports:
+    - protocol: TCP
+      port: 27018
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-deployment
+  namespace: mongodb
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image:  mongo:latest
+        envFrom:
+          - configMapRef: 
+              name: mongodb-config
+          - secretRef:
+              name: mongodb-secret
+        ports:
+        - containerPort: 27017
